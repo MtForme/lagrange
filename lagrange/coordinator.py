@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from lagrange.consensus.pbft import reach_consensus
+from lagrange.crypto.signer import Signer
 from lagrange.memory.schema import Memory
 from lagrange.nodes.base_node import BaseNode
 
@@ -30,31 +31,76 @@ class Coordinator:
         nodes: list[BaseNode],
         store: Any | None = None,
         alert_log_path: str | Path = "lagrange_alerts.jsonl",
+        signer: Signer | None = None,
     ) -> None:
         if len(nodes) < MIN_NODES:
             raise ValueError(f"Lagrange requires at least {MIN_NODES} independent nodes for BFT")
         self.nodes = nodes
         self.store = store
         self.alert_log_path = Path(alert_log_path)
+        # Note: if a CryptoNode is among `nodes`, it must be constructed
+        # with this same Signer (or one sharing its keypair) — otherwise
+        # it can never verify signatures produced by write_internal_fact.
+        self.signer = signer or Signer()
         self._rejection_counts: dict[str, int] = {}
 
     # -- write path ---------------------------------------------------
 
-    def write_memory(self, content: str, source: str, context: dict[str, Any] | None = None) -> Memory:
+    def write_memory(
+        self,
+        content: str,
+        source: str,
+        context: dict[str, Any] | None = None,
+        signature: str = "",
+    ) -> Memory:
         """Propose a memory write; accepted only on 2/3 node consensus.
+
+        `signature` is only meaningful for source="internal_system" and
+        must come from a Signer sharing this coordinator's keypair (see
+        write_internal_fact). Untrusted, agent-facing callers should
+        never be able to supply one — that capability is what lets Node B
+        catch an attacker tricking an agent into mislabeling injected
+        content as internal_system.
 
         Fail-safe: any exception raised by a node during evaluation is
         treated as a rejection vote from that node rather than crashing
         the whole write, since we'd rather quarantine than lose a memory
         write to an unrelated bug in a single node.
         """
+        return self._propose(content, source, time.time(), context, signature)
+
+    def write_internal_fact(self, content: str, context: dict[str, Any] | None = None) -> Memory:
+        """Write a genuinely internal_system memory, signed with this
+        coordinator's own key.
+
+        This is the ONLY legitimate way to produce a validly-signed
+        internal_system memory. It must only be reachable from trusted
+        Lagrange-internal code (e.g. bootstrapping seed facts) — never
+        exposed through an agent-facing tool/MCP surface, since anything
+        reachable by the agent is reachable by prompt injection.
+        """
+        timestamp = time.time()
+        signature = self.signer.sign(content, "internal_system", timestamp)
+        return self._propose(content, "internal_system", timestamp, context, signature)
+
+    def _propose(
+        self,
+        content: str,
+        source: str,
+        timestamp: float,
+        context: dict[str, Any] | None,
+        signature: str,
+    ) -> Memory:
+        """Shared write path: broadcast to nodes, apply consensus, commit or quarantine."""
         context = dict(context or {})
-        memory = Memory(
-            id=str(uuid.uuid4()),
-            content=content,
-            source=source,
-            timestamp=time.time(),
-        )
+        memory = Memory(id=str(uuid.uuid4()), content=content, source=source, timestamp=timestamp, signature=signature)
+
+        # Give every node equal, read-only access to existing memories for
+        # similarity checks (SemanticNode's job), without letting nodes
+        # touch the store directly. This is coordinator-provided context,
+        # not node-to-node communication.
+        if self.store is not None and "similar_memories" not in context:
+            context["similar_memories"] = self.store.query(content, top_k=5)
 
         votes = [self._safe_evaluate(node, memory, context) for node in self.nodes]
         result = reach_consensus(votes)

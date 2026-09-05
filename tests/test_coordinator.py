@@ -60,7 +60,8 @@ def test_rejected_memory_is_quarantined_not_written(tmp_path, three_rejecting_no
 
 
 def test_two_of_three_accept_commits_the_memory(tmp_path, make_mock_node):
-    nodes = [make_mock_node("semantic", True), make_mock_node("crypto", True), make_mock_node("temporal", False)]
+    # dissent kept below veto confidence so plain 2/3 majority applies
+    nodes = [make_mock_node("semantic", True), make_mock_node("crypto", True), make_mock_node("temporal", False, 0.5)]
     store = FakeStore()
     coordinator = Coordinator(nodes, store=store, alert_log_path=tmp_path / "alerts.jsonl")
 
@@ -71,13 +72,20 @@ def test_two_of_three_accept_commits_the_memory(tmp_path, make_mock_node):
 
 
 def test_a_failing_node_counts_as_a_rejection_not_a_crash(tmp_path, make_mock_node, exploding_node):
+    """A node raising an exception must never crash the write — but it
+    also shouldn't be silently outvoted 2-1 by nodes that never even ran
+    their check. The coordinator votes reject with full (1.0) confidence
+    on the crashing node's behalf, which is high enough to veto
+    acceptance (see pbft.py's veto rule): "when in doubt, quarantine"
+    applies just as much to an unrelated bug in a node as to a
+    confidently-flagged attack.
+    """
     nodes = [make_mock_node("semantic", True), make_mock_node("crypto", True), exploding_node]
     coordinator = Coordinator(nodes, alert_log_path=tmp_path / "alerts.jsonl")
 
-    # 2 accepts out of 3 (the exploding node's forced reject) still hits 2/3
     memory = coordinator.write_memory("some fact", source="internal_system")
 
-    assert memory.accepted is True
+    assert memory.accepted is False
     exploding_vote = next(v for v in memory.node_votes if v.node_id == "exploding")
     assert exploding_vote.verdict is False
     assert "RuntimeError" in exploding_vote.reason
