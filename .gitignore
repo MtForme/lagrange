@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# runtime artifacts
+lagrange_alerts.jsonl
+chroma_db/
+*.key
+*.pem
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
