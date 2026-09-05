@@ -1,7 +1,7 @@
 chromadb>=0.5
 sentence-transformers>=3.0
 cryptography>=42.0
-mcp>=1.0
+mcp>=1.0,<2  # mcp 2.x renamed FastMCP -> MCPServer with a different API; pin to the v1 line this server targets
 numpy>=1.26
 pytest>=8.0
 pytest-cov>=5.0

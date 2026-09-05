@@ -15,10 +15,14 @@ development priorities.
 
 ## Status
 
-Early scaffold. Core consensus (`lagrange/consensus/pbft.py`) and the
-coordinator (`lagrange/coordinator.py`) are implemented and tested against
-mock nodes. The real semantic/crypto/temporal nodes are not implemented
-yet.
+Core consensus, the coordinator, all three real nodes (semantic,
+cryptographic, temporal), the ChromaDB-backed store, and an MCP server
+exposing `write_memory` / `read_memory` are implemented and tested,
+including an end-to-end red-team suite (`tests/test_attacks.py`). See
+that file's docstring for one intentionally-documented, not-yet-closed
+gap (policy injection via trusted direct chat).
+
+Not yet built: `examples/`.
 
 ## Setup
 
@@ -32,3 +36,23 @@ py -3.11 -m venv .venv
 ```powershell
 ./.venv/Scripts/python -m pytest tests/ -v
 ```
+
+## Using with Claude Desktop / Claude Code
+
+Add to your MCP server config (e.g. `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "lagrange": {
+      "command": "C:/path/to/Lagrange/.venv/Scripts/python.exe",
+      "args": ["-m", "lagrange.mcp_server"]
+    }
+  }
+}
+```
+
+This exposes `write_memory(content, source, origin)` and
+`read_memory(query, top_k)` as tools. The agent can never write
+`source="internal_system"` through this server — see
+`lagrange/mcp_server.py`'s docstring for why that matters.
