@@ -16,13 +16,13 @@ development priorities.
 ## Status
 
 Core consensus, the coordinator, all three real nodes (semantic,
-cryptographic, temporal), the ChromaDB-backed store, and an MCP server
-exposing `write_memory` / `read_memory` are implemented and tested,
-including an end-to-end red-team suite (`tests/test_attacks.py`). See
-that file's docstring for one intentionally-documented, not-yet-closed
-gap (policy injection via trusted direct chat).
-
-Not yet built: `examples/`.
+cryptographic, temporal), the ChromaDB-backed store, an MCP server
+exposing `write_memory` / `read_memory`, and runnable examples
+(`examples/basic_usage.py`, `examples/agent_integration.py`) are all
+implemented and tested, including an end-to-end red-team suite
+(`tests/test_attacks.py`). See that file's docstring for one
+intentionally-documented, not-yet-closed gap (policy injection via
+trusted direct chat).
 
 ## Setup
 
