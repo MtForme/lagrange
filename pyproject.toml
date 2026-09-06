@@ -81,6 +81,7 @@ include = [
     "/lagrange",
     "/tests",
     "/examples",
+    "/scripts",
     "/docs",
     "/README.md",
     "/LICENSE",

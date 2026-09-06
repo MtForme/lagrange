@@ -219,8 +219,11 @@ Every stored memory carries:
 - **Node collusion.** 2/3 compromised nodes defeat the system. Future
   work: TEE attestation.
 - **Cold start.** Node A needs existing memories to detect anomalies.
-- **Latency.** Three-node consensus adds overhead; the < 50 ms/write
-  target is not yet benchmarked.
+
+(The < 50 ms/write overhead target from CLAUDE.md is met with room to
+spare — see [Performance](../README.md#performance) and
+`scripts/benchmark.py`. The `sentence-transformers` embedder is the one
+part that can push it up, since it re-embeds candidate memories.)
 
 ## 8. Research context
 

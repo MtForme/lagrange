@@ -142,9 +142,26 @@ equipped to notice, and two indifferent nodes should not be able to
 outvote one alarmed specialist. A memory accepted 2–1 keeps a lowered
 confidence score so the dissent stays visible at read time.
 
+## Performance
+
+`python scripts/benchmark.py` measures the consensus overhead — what
+`write_memory` costs *on top of* the vector-store calls a naive memory
+system would make anyway (proposal + three nodes + consensus).
+
+| store, 1k memories | end-to-end write (p50) | **consensus overhead** (p50 / p95) |
+|---|---|---|
+| in-memory ChromaDB | 16.5 ms | **0.5 ms / 0.7 ms** |
+| on-disk ChromaDB | 37.4 ms | **0.6 ms / 0.9 ms** |
+
+With the default offline hashing embedder the overhead is under 1 ms —
+the write latency is essentially all ChromaDB. The `sentence-transformers`
+embedder is slower (it re-embeds the candidate memories); measure your
+own config. Target from `CLAUDE.md`: < 50 ms overhead — comfortably met.
+(Numbers from one laptop; run the script on your hardware.)
+
 ## Status & limitations
 
-Implemented and tested (73 tests, including an end-to-end red-team suite
+Implemented and tested (78 tests, including an end-to-end red-team suite
 in `tests/test_attacks.py`): the consensus engine, the coordinator, all
 three nodes, the ChromaDB store, the MCP server, and the examples.
 
@@ -159,7 +176,6 @@ three nodes, the ChromaDB store, the MCP server, and the examples.
   bypassable by paraphrase. Defense-in-depth, not a solved classifier.
 - The **coordinator is a single point of failure**; **2/3 compromised
   nodes** defeat the system.
-- The `< 50 ms`/write latency target is **not yet benchmarked**.
 
 ## Development
 

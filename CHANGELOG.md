@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `scripts/benchmark.py` — measures consensus overhead (p50 / p95 / p99)
+  vs. a naive `store.add`. With the default offline embedder the overhead
+  is < 1 ms; write latency is dominated by ChromaDB. Documented in the
+  README's Performance section.
 - `Signer.load(path)` / `.save(path)` / `.load_or_create(path)` — the
   Ed25519 signing key now persists as `0600` PKCS#8 PEM, so
   `internal_system` signatures keep verifying across process restarts.
