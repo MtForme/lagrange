@@ -124,9 +124,17 @@ class SemanticNode(BaseNode):
                 "cold start: no existing memories to compare against",
             )
 
-        query_vector = self.embedder(memory.content)
+        # Reuse embeddings the coordinator already computed where possible:
+        # the new content's vector from context, each candidate's stored
+        # vector from the store. Fall back to embedding on demand so this
+        # node still works standalone or with a store that doesn't supply
+        # them. (All paths use one embedder / one vector space, as the
+        # module docstring requires.)
+        query_vector = context.get("query_embedding")
+        if query_vector is None:
+            query_vector = self.embedder(memory.content)
         best_similarity = max(
-            _cosine_similarity(query_vector, self.embedder(candidate.content)) for candidate in existing
+            _cosine_similarity(query_vector, self._candidate_vector(candidate)) for candidate in existing
         )
 
         if best_similarity >= self.topic_threshold and self._looks_contradictory(memory.content):
@@ -146,6 +154,11 @@ class SemanticNode(BaseNode):
             confidence,
             f"consistent with existing memories (best similarity={best_similarity:.2f})",
         )
+
+    def _candidate_vector(self, candidate: Memory) -> Sequence[float]:
+        if getattr(candidate, "embedding", None):
+            return candidate.embedding
+        return self.embedder(candidate.content)
 
     @staticmethod
     def _looks_contradictory(content: str) -> bool:

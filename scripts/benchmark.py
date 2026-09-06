@@ -1,16 +1,17 @@
 """Measure the per-write latency Lagrange's consensus adds.
 
 CLAUDE.md sets a target of < 50 ms of overhead per memory write for
-production viability. "Overhead" here is everything
-`coordinator.write_memory(...)` does *except* the vector-store calls a
-naive memory system would also make — i.e. building the proposal,
-running the three nodes, and reaching consensus. It is measured directly
-by subtracting the time spent inside `store.query` + `store.add` from
-the end-to-end call, on the same writes.
+production viability. Each measured `coordinator.write_memory(...)` call
+is split into:
 
-Also reported: the full write path, each store call, and each node's
-`evaluate(...)` in isolation, on a store pre-populated with
-`--store-size` memories, as p50 / p95 / p99.
+- time inside the vector store (`store.query` + `store.add`),
+- one embedding of the new content (unavoidable for any vector memory),
+- "consensus overhead" — everything left: building the proposal, the
+  three nodes, and PBFT.
+
+The consensus overhead is what the < 50 ms target is about. Also
+reported: each store call and each node's `evaluate(...)` in isolation,
+on a store pre-populated with `--store-size` memories, as p50/p95/p99.
 
 Usage:
 
@@ -60,17 +61,29 @@ def _sentence(i: int) -> str:
 
 
 class TimingStore:
-    """Wraps a MemoryStore and accumulates time spent in query/add so the
-    benchmark can subtract it from the end-to-end write latency.
+    """Wraps a MemoryStore and accumulates time spent in query/add/embed
+    so the benchmark can subtract each from the end-to-end write latency.
+
+    `embedder` is exposed (and timed) because the coordinator reads it off
+    the store to embed the new content once — a cost any vector-memory
+    system pays, so it is reported separately from consensus overhead.
     """
 
     def __init__(self, inner: MemoryStore) -> None:
         self.inner = inner
         self.query_s = 0.0
         self.add_s = 0.0
+        self.embed_s = 0.0
 
     def reset(self) -> None:
-        self.query_s = self.add_s = 0.0
+        self.query_s = self.add_s = self.embed_s = 0.0
+
+    def embedder(self, text):
+        start = time.perf_counter()
+        try:
+            return self.inner.embedder(text)
+        finally:
+            self.embed_s += time.perf_counter() - start
 
     def query(self, *args, **kwargs):
         start = time.perf_counter()
@@ -154,9 +167,12 @@ def main() -> None:
     for i in range(args.warmup):
         coordinator.write_memory(_sentence(10_000_000 + i), source="verified_user", context={"origin": "direct_chat"})
 
-    # End-to-end, and the consensus overhead within it (total minus the
-    # time spent inside store.query + store.add on that same call).
+    # End-to-end, split into: time inside the vector store (query + add),
+    # the one unavoidable embedding of the new content, and what's left —
+    # the actual consensus machinery (three nodes + PBFT + plumbing).
     total_samples: list[float] = []
+    store_samples: list[float] = []
+    embed_samples: list[float] = []
     overhead_samples: list[float] = []
     for i in range(args.count):
         store.reset()
@@ -164,11 +180,15 @@ def main() -> None:
         coordinator.write_memory(_sentence(20_000_000 + i), source="verified_user", context={"origin": "direct_chat"})
         elapsed = time.perf_counter() - start
         total_samples.append(elapsed)
-        overhead_samples.append(elapsed - store.query_s - store.add_s)
+        store_samples.append(store.query_s + store.add_s)
+        embed_samples.append(store.embed_s)
+        overhead_samples.append(elapsed - store.query_s - store.add_s - store.embed_s)
 
-    print("full write path:")
+    print("full write path, per call:")
     total = _report("write_memory (end to end)", total_samples)
-    overhead = _report("consensus overhead", overhead_samples)
+    _report("  in vector store (query+add)", store_samples)
+    _report("  embed new content (once)", embed_samples)
+    overhead = _report("  consensus overhead", overhead_samples)
 
     print("\ncomponents:")
 
@@ -185,7 +205,13 @@ def main() -> None:
     _time_loop("store.add", args.count, _add_fresh)
     _time_loop("store.query (top_k=5)", args.count, lambda i: raw_store.query(_sentence(40_000_000 + i), top_k=5))
 
-    sample_ctx = {"origin": "direct_chat", "similar_memories": raw_store.query(_sentence(1), top_k=5)}
+    # Mirror what the coordinator supplies: candidates carry their stored
+    # embeddings, and the new content's vector is precomputed once.
+    sample_ctx = {
+        "origin": "direct_chat",
+        "similar_memories": raw_store.query(_sentence(1), top_k=5),
+        "query_embedding": list(raw_store.embedder(_sentence(2))),
+    }
 
     def _node_call(node):
         return lambda i: node.evaluate(

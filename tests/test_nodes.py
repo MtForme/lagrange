@@ -313,3 +313,46 @@ def test_hashing_default_embedder_is_deterministic_across_instances():
 
     assert vote_a.verdict is True
     assert vote_b.verdict is True
+
+
+class CountingEmbedder:
+    """Records how many times it was asked to embed something."""
+
+    def __init__(self, vectors):
+        self.vectors = vectors
+        self.calls = 0
+
+    def __call__(self, text):
+        self.calls += 1
+        return self.vectors[text]
+
+
+def test_semantic_node_reuses_supplied_embeddings_and_does_not_re_embed():
+    """With the coordinator supplying the new content's vector and each
+    candidate carrying its stored vector, the node should not call the
+    embedder at all — this is the sentence-transformers latency fix.
+    """
+    embedder = CountingEmbedder({"new fact": [1.0, 0.0], "stored fact": [1.0, 0.0]})
+    node = SemanticNode(embedder=embedder, topic_threshold=0.5)
+    candidate = Memory(id="c", content="stored fact", source="verified_user", timestamp=1.0, embedding=[1.0, 0.0])
+
+    vote = node.evaluate(
+        _memory("verified_user", content="new fact"),
+        context={"similar_memories": [candidate], "query_embedding": [1.0, 0.0]},
+    )
+
+    assert vote.verdict is True
+    assert embedder.calls == 0
+
+
+def test_semantic_node_still_embeds_when_nothing_is_supplied():
+    embedder = CountingEmbedder({"new fact": [1.0, 0.0], "stored fact": [1.0, 0.0]})
+    node = SemanticNode(embedder=embedder, topic_threshold=0.5)
+    candidate = _memory("verified_user", content="stored fact")  # no stored embedding
+
+    node.evaluate(
+        _memory("verified_user", content="new fact"),
+        context={"similar_memories": [candidate]},  # no query_embedding
+    )
+
+    assert embedder.calls == 2  # once for the new content, once for the candidate

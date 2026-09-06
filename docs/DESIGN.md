@@ -80,8 +80,10 @@ all consensus logic lives in `consensus/pbft.py`.
 ### Write flow
 
 1. Agent calls `write_memory(content, source, origin)`.
-2. Coordinator builds a `Memory`, attaches the top-k existing similar
-   memories as read-only context, and broadcasts to all three nodes.
+2. Coordinator builds a `Memory`, embeds the content once (reused by the
+   store and the semantic node), attaches the top-k existing similar
+   memories — each with its stored embedding — as read-only context, and
+   broadcasts to all three nodes.
 3. Each node returns a `NodeVote(verdict, confidence, reason)`
    independently. An exception from a node is treated as a reject vote,
    never a crash.
@@ -110,8 +112,13 @@ Detects a memory that is topically close to an existing one but reads as a
 contradiction — the signature of a quiet fact-overwrite ("the deploy
 server is *actually* prod-evil.external").
 
-- Embeds the new content and the candidate similar memories, takes the
-  best cosine similarity.
+- Takes the best cosine similarity between the new content and the
+  candidate similar memories. The coordinator embeds the new content once
+  and passes it in (`context["query_embedding"]`); each candidate is
+  compared using the embedding the store already has. The node only
+  embeds anything itself as a fallback (no store, or a store that doesn't
+  return embeddings) — so a real `sentence-transformers` write costs one
+  encode, not one per candidate.
 - If similarity ≥ `topic_threshold` **and** the text contains a negation
   / override marker (`not`, `never`, `actually`, `no longer`, …) →
   **reject**, confidence scaled by similarity.
@@ -219,13 +226,6 @@ Every stored memory carries:
 - **Node collusion.** 2/3 compromised nodes defeat the system. Future
   work: TEE attestation.
 - **Cold start.** Node A needs existing memories to detect anomalies.
-- **`sentence-transformers` write latency.** The semantic node re-embeds
-  every candidate memory on each write, one `encode()` call at a time, so
-  the < 50 ms overhead target (met with ~50× headroom on the hashing
-  embedder) is missed badly on CPU with a real model: ~155 ms p50. Fix:
-  return the embeddings ChromaDB already stored via `store.query`, reuse
-  them in the node, embed the new content once, and batch. See
-  [Performance](../README.md#performance) and `scripts/benchmark.py`.
 
 ## 8. Research context
 

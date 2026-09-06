@@ -144,27 +144,23 @@ confidence score so the dissent stays visible at read time.
 
 ## Performance
 
-`python scripts/benchmark.py` measures the consensus overhead — what
-`write_memory` costs *on top of* the vector-store calls a naive memory
-system would make anyway (proposal + three nodes + consensus).
+`python scripts/benchmark.py` splits each `write_memory` call into: time
+in the vector store, one embedding of the new content (unavoidable for
+any vector memory), and **consensus overhead** — the proposal, the three
+nodes, and PBFT. The last is what the `CLAUDE.md` < 50 ms target covers.
 
 | config, 1k memories | end-to-end write (p50) | **consensus overhead** (p50 / p95) |
 |---|---|---|
-| hashing embedder, in-memory ChromaDB | 16.5 ms | **0.5 ms / 0.7 ms** |
-| hashing embedder, on-disk ChromaDB | 37.4 ms | **0.6 ms / 0.9 ms** |
-| `sentence-transformers`, in-memory (CPU) | 220 ms | **155 ms / 537 ms** ⚠️ |
+| hashing embedder, in-memory ChromaDB | 17 ms | **0.5 ms / 0.7 ms** |
+| hashing embedder, on-disk ChromaDB | 54 ms | **0.4 ms / 0.5 ms** |
+| `sentence-transformers`, in-memory (CPU) | 68 ms | **1.1 ms / 4.4 ms** |
 
-With the default offline hashing embedder the overhead is under 1 ms —
-write latency is essentially all ChromaDB, and the < 50 ms target from
-`CLAUDE.md` is met with ~50× headroom.
-
-**The `sentence-transformers` path does not currently meet that target**
-on CPU: the semantic node re-embeds every candidate memory on each write,
-one call at a time (~6 encodes/write). Fixing it (reuse the embeddings
-ChromaDB already stored; batch; embed the new content once) is tracked
-for the next release. Until then, use a GPU, a smaller/faster model, or
-the hashing embedder. Numbers are from one laptop — run the script on
-your hardware.
+Consensus overhead is ~1 ms or less in every configuration — the write
+latency is embedding + ChromaDB, which you pay with or without Lagrange.
+The coordinator embeds the new content once and shares it with the store
+and the nodes; each candidate memory is compared using the embedding
+ChromaDB already stored, so the semantic node never re-embeds.
+(Numbers from one laptop; run the script on your hardware.)
 
 ## Status & limitations
 

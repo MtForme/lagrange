@@ -74,7 +74,13 @@ class MemoryStore:
         if self.count() == 0:
             return []
         query_embedding = self.embedder(query_text)
-        results = self._collection.query(query_embeddings=[_as_floats(query_embedding)], n_results=top_k)
+        results = self._collection.query(
+            query_embeddings=[_as_floats(query_embedding)],
+            n_results=top_k,
+            # Ask for the stored embeddings back so callers (SemanticNode,
+            # via the coordinator) don't have to re-embed each candidate.
+            include=["documents", "metadatas", "embeddings"],
+        )
         return self._results_to_memories(results)
 
     def count(self) -> int:
@@ -96,14 +102,23 @@ class MemoryStore:
         documents = results.get("documents", [[]])[0]
         metadatas = results.get("metadatas", [[]])[0]
 
+        # chromadb only returns embeddings when explicitly asked, and hands
+        # them back as a numpy array — avoid truthiness checks on it.
+        embeddings_result = results.get("embeddings")
+        if embeddings_result is None or len(embeddings_result) == 0:
+            embeddings = [None] * len(ids)
+        else:
+            embeddings = embeddings_result[0]
+
         memories = []
-        for memory_id, content, meta in zip(ids, documents, metadatas, strict=True):
+        for memory_id, content, meta, embedding in zip(ids, documents, metadatas, embeddings, strict=True):
             memories.append(
                 Memory(
                     id=memory_id,
                     content=content,
                     source=meta["source"],
                     timestamp=meta["timestamp"],
+                    embedding=_as_floats(embedding) if embedding is not None else [],
                     confidence_score=meta.get("confidence_score", 0.0),
                     accepted=meta.get("accepted", True),
                     signature=meta.get("signature", ""),

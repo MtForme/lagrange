@@ -73,6 +73,19 @@ def test_query_returns_most_similar_memory_first():
     assert results[0].id == "m2"
 
 
+def test_query_returns_each_memory_with_its_stored_embedding():
+    """The coordinator hands these to SemanticNode so it doesn't have to
+    re-embed every candidate on each write.
+    """
+    embedder = FixedEmbedder({"stored fact": [0.1, 0.2, 0.3], "lookup": [0.1, 0.2, 0.3]})
+    store = MemoryStore(embedder=embedder, path=None)
+    store.add(_memory("stored fact", memory_id="s1"))
+
+    (result,) = store.query("lookup", top_k=1)
+
+    assert [round(x, 4) for x in result.embedding] == [0.1, 0.2, 0.3]
+
+
 def test_add_and_query_accept_a_numpy_float32_embedding():
     """sentence-transformers returns np.float32 arrays; np.float32 is not
     a `float` subclass, so recent ChromaDB rejects a bare list(embedding).

@@ -95,10 +95,20 @@ class Coordinator:
         context = dict(context or {})
         memory = Memory(id=str(uuid.uuid4()), content=content, source=source, timestamp=timestamp, signature=signature)
 
+        # Embed the new content once, here, and share it with both the
+        # store and the nodes via `memory.embedding` / context, so the
+        # semantic node never has to re-embed it (and neither does
+        # store.add). Only possible when the store exposes its embedder.
+        store_embedder = getattr(self.store, "embedder", None)
+        if store_embedder is not None and not memory.embedding:
+            memory.embedding = list(store_embedder(content))
+            context.setdefault("query_embedding", memory.embedding)
+
         # Give every node equal, read-only access to existing memories for
         # similarity checks (SemanticNode's job), without letting nodes
         # touch the store directly. This is coordinator-provided context,
-        # not node-to-node communication.
+        # not node-to-node communication. The store returns each candidate
+        # with its stored embedding, so the semantic node reuses those too.
         if self.store is not None and "similar_memories" not in context:
             context["similar_memories"] = self.store.query(content, top_k=5)
 

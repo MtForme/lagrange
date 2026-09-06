@@ -103,6 +103,43 @@ def test_repeated_rejections_from_same_source_escalate(tmp_path, three_rejecting
     assert records[-1]["escalation"] is True
 
 
+def test_coordinator_embeds_new_content_once_and_shares_it(tmp_path, three_accepting_nodes):
+    """When the store exposes an embedder, the coordinator embeds the new
+    content a single time and passes it to both the store (via
+    memory.embedding) and the nodes (via context['query_embedding']), so
+    the semantic node never re-embeds it.
+    """
+    seen_contexts = []
+
+    class RecordingNode:
+        node_id = "recorder"
+
+        def evaluate(self, memory, context):
+            seen_contexts.append(context)
+            from lagrange.memory.schema import NodeVote
+
+            return NodeVote("recorder", True, 0.9, "ok")
+
+    class StoreWithEmbedder(FakeStore):
+        def __init__(self):
+            super().__init__()
+            self.embed_calls = 0
+
+        def embedder(self, text):
+            self.embed_calls += 1
+            return [0.5, 0.5]
+
+    store = StoreWithEmbedder()
+    nodes = [*three_accepting_nodes, RecordingNode()]
+    coordinator = Coordinator(nodes, store=store, alert_log_path=tmp_path / "alerts.jsonl")
+
+    memory = coordinator.write_memory("a new fact", source="verified_user")
+
+    assert memory.embedding == [0.5, 0.5]
+    assert seen_contexts[-1]["query_embedding"] == [0.5, 0.5]
+    assert store.embed_calls == 1  # not re-embedded by store.add
+
+
 def test_read_memory_without_store_returns_empty_list(three_accepting_nodes):
     coordinator = Coordinator(three_accepting_nodes)
     assert coordinator.read_memory("anything") == []

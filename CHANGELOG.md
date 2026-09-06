@@ -8,12 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `scripts/benchmark.py` — measures consensus overhead (p50 / p95 / p99)
-  vs. a naive `store.add`. With the default offline embedder the overhead
-  is < 1 ms; write latency is dominated by ChromaDB. The
-  `sentence-transformers` path is ~155 ms p50 on CPU and does not yet
-  meet the < 50 ms target (re-embeds candidates per write). Documented in
+- `scripts/benchmark.py` — splits each write into vector-store time, the
+  one unavoidable content embedding, and consensus overhead (p50/p95/p99).
+  Consensus overhead is ~0.5 ms with the hashing embedder and ~1 ms with
+  `sentence-transformers` — well under the < 50 ms target. Documented in
   the README's Performance section.
+
+### Changed
+- The coordinator now embeds the new content once and shares it with the
+  store and the semantic node; `store.query` returns each candidate with
+  its stored embedding, so the semantic node no longer re-embeds
+  candidates on every write. Cut `sentence-transformers` consensus
+  overhead from ~155 ms to ~1 ms p50.
 
 ### Fixed
 - `MemoryStore` rejected `np.float32` embeddings (from
