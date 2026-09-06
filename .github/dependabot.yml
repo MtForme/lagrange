@@ -13,3 +13,8 @@ updates:
     groups:
       python-deps:
         patterns: ["*"]
+    ignore:
+      # mcp 2.x renamed FastMCP -> MCPServer and moved mcp.server.fastmcp;
+      # lagrange/mcp_server.py targets the v1 API. Revisit when migrating.
+      - dependency-name: mcp
+        update-types: ["version-update:semver-major"]
