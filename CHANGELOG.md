@@ -10,8 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `scripts/benchmark.py` — measures consensus overhead (p50 / p95 / p99)
   vs. a naive `store.add`. With the default offline embedder the overhead
-  is < 1 ms; write latency is dominated by ChromaDB. Documented in the
-  README's Performance section.
+  is < 1 ms; write latency is dominated by ChromaDB. The
+  `sentence-transformers` path is ~155 ms p50 on CPU and does not yet
+  meet the < 50 ms target (re-embeds candidates per write). Documented in
+  the README's Performance section.
+
+### Fixed
+- `MemoryStore` rejected `np.float32` embeddings (from
+  `sentence-transformers`) because np.float32 is not a `float` subclass;
+  embeddings are now normalized to plain floats.
 - `Signer.load(path)` / `.save(path)` / `.load_or_create(path)` — the
   Ed25519 signing key now persists as `0600` PKCS#8 PEM, so
   `internal_system` signatures keep verifying across process restarts.

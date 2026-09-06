@@ -148,16 +148,23 @@ confidence score so the dissent stays visible at read time.
 `write_memory` costs *on top of* the vector-store calls a naive memory
 system would make anyway (proposal + three nodes + consensus).
 
-| store, 1k memories | end-to-end write (p50) | **consensus overhead** (p50 / p95) |
+| config, 1k memories | end-to-end write (p50) | **consensus overhead** (p50 / p95) |
 |---|---|---|
-| in-memory ChromaDB | 16.5 ms | **0.5 ms / 0.7 ms** |
-| on-disk ChromaDB | 37.4 ms | **0.6 ms / 0.9 ms** |
+| hashing embedder, in-memory ChromaDB | 16.5 ms | **0.5 ms / 0.7 ms** |
+| hashing embedder, on-disk ChromaDB | 37.4 ms | **0.6 ms / 0.9 ms** |
+| `sentence-transformers`, in-memory (CPU) | 220 ms | **155 ms / 537 ms** ⚠️ |
 
 With the default offline hashing embedder the overhead is under 1 ms —
-the write latency is essentially all ChromaDB. The `sentence-transformers`
-embedder is slower (it re-embeds the candidate memories); measure your
-own config. Target from `CLAUDE.md`: < 50 ms overhead — comfortably met.
-(Numbers from one laptop; run the script on your hardware.)
+write latency is essentially all ChromaDB, and the < 50 ms target from
+`CLAUDE.md` is met with ~50× headroom.
+
+**The `sentence-transformers` path does not currently meet that target**
+on CPU: the semantic node re-embeds every candidate memory on each write,
+one call at a time (~6 encodes/write). Fixing it (reuse the embeddings
+ChromaDB already stored; batch; embed the new content once) is tracked
+for the next release. Until then, use a GPU, a smaller/faster model, or
+the hashing embedder. Numbers are from one laptop — run the script on
+your hardware.
 
 ## Status & limitations
 

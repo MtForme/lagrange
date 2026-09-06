@@ -219,11 +219,13 @@ Every stored memory carries:
 - **Node collusion.** 2/3 compromised nodes defeat the system. Future
   work: TEE attestation.
 - **Cold start.** Node A needs existing memories to detect anomalies.
-
-(The < 50 ms/write overhead target from CLAUDE.md is met with room to
-spare — see [Performance](../README.md#performance) and
-`scripts/benchmark.py`. The `sentence-transformers` embedder is the one
-part that can push it up, since it re-embeds candidate memories.)
+- **`sentence-transformers` write latency.** The semantic node re-embeds
+  every candidate memory on each write, one `encode()` call at a time, so
+  the < 50 ms overhead target (met with ~50× headroom on the hashing
+  embedder) is missed badly on CPU with a real model: ~155 ms p50. Fix:
+  return the embeddings ChromaDB already stored via `store.query`, reuse
+  them in the node, embed the new content once, and batch. See
+  [Performance](../README.md#performance) and `scripts/benchmark.py`.
 
 ## 8. Research context
 
