@@ -62,6 +62,16 @@ the number of nodes is a consensus-design change, not a drop-in.
 Explain *why*, not just *what*. Present tense, imperative mood
 ("Add temporal burst detection", not "Added…").
 
+## Releasing (maintainers)
+
+1. Move the `CHANGELOG.md` `[Unreleased]` entries under a new
+   `[x.y.z]` heading with the date; update the link refs.
+2. Bump `__version__` in `lagrange/__init__.py`.
+3. Commit, then create a GitHub Release with tag `vx.y.z`.
+4. `.github/workflows/publish.yml` builds and publishes to PyPI via
+   Trusted Publishing (OIDC — no stored token). Its header comment has
+   the one-time PyPI pending-publisher setup.
+
 ## License
 
 By contributing you agree that your contributions are licensed under the
