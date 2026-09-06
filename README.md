@@ -156,6 +156,10 @@ pip install -e ".[dev]"
 pytest
 ```
 
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the design rules PRs are held
+to, [`CHANGELOG.md`](CHANGELOG.md) for release notes, and
+[`SECURITY.md`](SECURITY.md) to report a vulnerability.
+
 ## License
 
 [Apache-2.0](LICENSE)
