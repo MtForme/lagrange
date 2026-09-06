@@ -17,7 +17,8 @@ chroma_db/
 *.key
 *.pem
 
-# editor / OS
+# editor / OS / local agent config
 .vscode/
 .idea/
 .DS_Store
+.claude/settings.local.json

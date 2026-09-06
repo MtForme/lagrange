@@ -5,6 +5,15 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- `pyproject.toml` author email is now the GitHub noreply address,
+  matching the commit metadata.
+- `SECURITY.md` documents the unbounded alert log / store growth and
+  notes the alert log never contains rejected content.
+- `.gitignore` covers `.claude/settings.local.json`.
+
 ## [0.1.0] — 2026-09-06
 
 First public release. Byzantine Fault Tolerant consensus middleware that
@@ -65,4 +74,5 @@ stores it only on 2/3 agreement.
 - The coordinator is a single point of failure; 2/3 compromised nodes
   defeat consensus.
 
+[Unreleased]: https://github.com/MtForme/lagrange/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/MtForme/lagrange/releases/tag/v0.1.0

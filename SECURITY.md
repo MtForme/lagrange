@@ -41,6 +41,12 @@ few days. There is no bug-bounty program.
   be evaded by paraphrase.
 - The coordinator is a single point of failure; compromising 2 of 3
   nodes defeats consensus.
+- The alert log (`lagrange_alerts.jsonl`) and the vector store grow
+  unbounded. A misbehaving agent that spams rejected writes fills local
+  disk; `TemporalNode` burst detection only slows this. Rotate or cap the
+  log at the deployment level. Note the log records provenance metadata
+  only (source, timestamp, node reasons) — never the rejected content —
+  so it is safe to tail or parse.
 
 If you have an idea for closing one of these, an issue or PR is welcome —
 that is normal development, not a security report.

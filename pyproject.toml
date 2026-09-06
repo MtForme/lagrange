@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-authors = [{ name = "Mattia Formenti", email = "mattiaformenti1@gmail.com" }]
+authors = [{ name = "Mattia Formenti", email = "123212267+MtForme@users.noreply.github.com" }]
 keywords = [
     "ai-agents",
     "agent-memory",
