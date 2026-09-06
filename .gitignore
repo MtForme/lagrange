@@ -4,6 +4,12 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+.ruff_cache/
+
+# build artifacts
+build/
+dist/
+*.egg-info/
 
 # runtime artifacts
 lagrange_alerts.jsonl

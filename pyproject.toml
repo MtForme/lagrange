@@ -1,0 +1,98 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lagrange-memory"
+dynamic = ["version"]
+description = "Byzantine Fault Tolerant consensus middleware that protects the persistent memory of AI agents from poisoning attacks."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Mattia Formenti", email = "mattiaformenti1@gmail.com" }]
+keywords = [
+    "ai-agents",
+    "agent-memory",
+    "prompt-injection",
+    "memory-poisoning",
+    "byzantine-fault-tolerance",
+    "consensus",
+    "mcp",
+    "ai-security",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+
+# Core stays deliberately small: only what the consensus engine, the three
+# nodes, the schema and the signer need. Everything heavier is an extra.
+dependencies = [
+    "cryptography>=42.0",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+# Persistent ChromaDB-backed memory store (lagrange.memory.store).
+chroma = ["chromadb>=0.5"]
+# Opt-in production embedder for the semantic node
+# (SemanticNode.from_sentence_transformers). Never imported implicitly.
+embeddings = ["sentence-transformers>=3.0"]
+# The agent-facing MCP server (lagrange.mcp_server). mcp 2.x renamed
+# FastMCP -> MCPServer with a different API; pin to the v1 line this
+# server targets.
+mcp = ["mcp>=1.0,<2"]
+# Everything a real deployment is likely to want in one shot.
+all = ["lagrange-memory[chroma,embeddings,mcp]"]
+# Contributor environment: all runtime extras + the test stack.
+dev = [
+    "lagrange-memory[all]",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+[project.urls]
+Homepage = "https://github.com/MtForme/lagrange"
+Repository = "https://github.com/MtForme/lagrange"
+Issues = "https://github.com/MtForme/lagrange/issues"
+"Design doc" = "https://github.com/MtForme/lagrange/blob/main/docs/DESIGN.md"
+
+[project.scripts]
+# `lagrange-mcp` launches the stdio MCP server (same as `python -m lagrange.mcp_server`).
+lagrange-mcp = "lagrange.mcp_server:main"
+
+[tool.hatch.version]
+path = "lagrange/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["lagrange"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/lagrange",
+    "/tests",
+    "/examples",
+    "/docs",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
