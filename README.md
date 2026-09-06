@@ -229,7 +229,7 @@ ChromaDB already stored, so the semantic node never re-embeds.
 
 ## Status & limitations
 
-Implemented and tested (78 tests, including an end-to-end red-team suite
+Implemented and tested (92 tests, including an end-to-end red-team suite
 in `tests/test_attacks.py`): the consensus engine, the coordinator, all
 three nodes, the ChromaDB store, the MCP server, and the examples.
 

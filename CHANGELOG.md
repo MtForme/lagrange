@@ -7,18 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-09-06
+
+First installable release. Functionally identical to 0.1.0, which was
+published and then removed from PyPI because its package metadata carried
+a personal email address.
+
 ### Changed
-- `pyproject.toml` author email is now the GitHub noreply address,
-  matching the commit metadata.
+- `pyproject.toml` author email is the GitHub noreply address, matching
+  the commit metadata.
 - `SECURITY.md` documents the unbounded alert log / store growth and
   notes the alert log never contains rejected content.
 - `.gitignore` covers `.claude/settings.local.json`.
+- `.github/dependabot.yml` — monthly updates for GitHub Actions and pip.
 
-## [0.1.0] — 2026-09-06
+## [0.1.0] — removed from PyPI
 
-First public release. Byzantine Fault Tolerant consensus middleware that
-validates every AI-agent memory write with three independent nodes and
-stores it only on 2/3 agreement.
+The original release. Its contents are unchanged in 0.1.1; install that
+instead. Everything below describes what both releases contain.
+
+Byzantine Fault Tolerant consensus middleware that validates every
+AI-agent memory write with three independent nodes and stores it only on
+2/3 agreement.
 
 ### Consensus and nodes
 - Core schema (`Memory`, `NodeVote`) and the `BaseNode` interface.
@@ -74,5 +84,5 @@ stores it only on 2/3 agreement.
 - The coordinator is a single point of failure; 2/3 compromised nodes
   defeat consensus.
 
-[Unreleased]: https://github.com/MtForme/lagrange/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/MtForme/lagrange/releases/tag/v0.1.0
+[Unreleased]: https://github.com/MtForme/lagrange/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/MtForme/lagrange/releases/tag/v0.1.1
