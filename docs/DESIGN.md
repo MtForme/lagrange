@@ -46,7 +46,7 @@ signature or write to the store directly.
   answer; not implemented.
 - The coordinator is a single point of failure.
 - Behavioral/outcome-level attacks that look completely normal by
-  provenance, timing and topical-consistency signals (see §7).
+  provenance, timing and topical-consistency signals (see §8).
 
 ## 3. Architecture
 
@@ -210,7 +210,20 @@ Every stored memory carries:
 | `accepted` | consensus outcome |
 | `node_votes` | each node's verdict, confidence and reason |
 
-## 7. Known open problems
+## 7. Configuration
+
+`lagrange/config.py` holds `LagrangeConfig` — every deployment-tunable
+value with a production-safe default — plus `build_coordinator(config)`,
+the one place the signer, embedder, store, three nodes and coordinator
+are wired together. `LagrangeConfig.from_env()` reads `LAGRANGE_<FIELD>`
+variables and overrides only what is set; an unparseable value raises
+rather than being ignored. The MCP server is `build_coordinator(
+LagrangeConfig.from_env())` and nothing more. The tunable knobs are the
+store/key/log paths, the embedder choice, `query_top_k`, the consensus
+`threshold` and `veto_confidence`, the escalation threshold, and the
+semantic/temporal node parameters — see the README's Configuration table.
+
+## 8. Known open problems
 
 - **Policy injection via trusted direct chat.** A plausible brand-new
   "policy" planted through the normal interface — no spoofed source, no
@@ -227,7 +240,7 @@ Every stored memory carries:
   work: TEE attestation.
 - **Cold start.** Node A needs existing memories to detect anomalies.
 
-## 8. Research context
+## 9. Research context
 
 Inspired by the Chronos Vulnerability taxonomy (arXiv:2607.19433).
 

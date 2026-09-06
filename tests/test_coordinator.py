@@ -140,6 +140,47 @@ def test_coordinator_embeds_new_content_once_and_shares_it(tmp_path, three_accep
     assert store.embed_calls == 1  # not re-embedded by store.add
 
 
+def test_consensus_threshold_override_is_applied(tmp_path, make_mock_node):
+    # 2 of 3 accept — enough by default, not enough at threshold 1.0
+    nodes = [make_mock_node("semantic", True), make_mock_node("crypto", True), make_mock_node("temporal", False, 0.5)]
+    strict = Coordinator(nodes, alert_log_path=tmp_path / "a.jsonl", consensus_threshold=1.0)
+
+    memory = strict.write_memory("some fact", source="verified_user")
+
+    assert memory.accepted is False
+
+
+def test_query_top_k_override_is_passed_to_the_store(tmp_path, three_accepting_nodes):
+    class RecordingStore(FakeStore):
+        def __init__(self):
+            super().__init__()
+            self.top_ks = []
+
+        def query(self, query, top_k=5):
+            self.top_ks.append(top_k)
+            return super().query(query, top_k)
+
+    store = RecordingStore()
+    coordinator = Coordinator(three_accepting_nodes, store=store, alert_log_path=tmp_path / "a.jsonl", query_top_k=3)
+
+    coordinator.write_memory("fact", source="verified_user")
+    coordinator.read_memory("fact")
+
+    assert store.top_ks == [3, 3]
+
+
+def test_escalation_threshold_override_is_applied(tmp_path, three_rejecting_nodes):
+    alert_log = tmp_path / "alerts.jsonl"
+    coordinator = Coordinator(three_rejecting_nodes, alert_log_path=alert_log, escalation_threshold=2)
+
+    for _ in range(2):
+        coordinator.write_memory("payload", source="external_unverified")
+
+    records = [json.loads(line) for line in alert_log.read_text().splitlines()]
+    assert records[0]["escalation"] is False
+    assert records[1]["escalation"] is True
+
+
 def test_read_memory_without_store_returns_empty_list(three_accepting_nodes):
     coordinator = Coordinator(three_accepting_nodes)
     assert coordinator.read_memory("anything") == []

@@ -14,13 +14,14 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from lagrange.consensus.pbft import reach_consensus
+from lagrange.consensus.pbft import DEFAULT_THRESHOLD, VETO_CONFIDENCE, reach_consensus
 from lagrange.crypto.signer import Signer
 from lagrange.memory.schema import Memory
 from lagrange.nodes.base_node import BaseNode
 
 MIN_NODES = 3
-ESCALATION_THRESHOLD = 3  # rejections from the same source before escalating
+DEFAULT_QUERY_TOP_K = 5
+DEFAULT_ESCALATION_THRESHOLD = 3  # rejections from the same source before escalating
 
 
 class Coordinator:
@@ -32,6 +33,11 @@ class Coordinator:
         store: Any | None = None,
         alert_log_path: str | Path = "lagrange_alerts.jsonl",
         signer: Signer | None = None,
+        *,
+        query_top_k: int = DEFAULT_QUERY_TOP_K,
+        consensus_threshold: float = DEFAULT_THRESHOLD,
+        veto_confidence: float = VETO_CONFIDENCE,
+        escalation_threshold: int = DEFAULT_ESCALATION_THRESHOLD,
     ) -> None:
         if len(nodes) < MIN_NODES:
             raise ValueError(f"Lagrange requires at least {MIN_NODES} independent nodes for BFT")
@@ -42,6 +48,10 @@ class Coordinator:
         # with this same Signer (or one sharing its keypair) — otherwise
         # it can never verify signatures produced by write_internal_fact.
         self.signer = signer or Signer()
+        self.query_top_k = query_top_k
+        self.consensus_threshold = consensus_threshold
+        self.veto_confidence = veto_confidence
+        self.escalation_threshold = escalation_threshold
         self._rejection_counts: dict[str, int] = {}
 
     # -- write path ---------------------------------------------------
@@ -110,10 +120,14 @@ class Coordinator:
         # not node-to-node communication. The store returns each candidate
         # with its stored embedding, so the semantic node reuses those too.
         if self.store is not None and "similar_memories" not in context:
-            context["similar_memories"] = self.store.query(content, top_k=5)
+            context["similar_memories"] = self.store.query(content, top_k=self.query_top_k)
 
         votes = [self._safe_evaluate(node, memory, context) for node in self.nodes]
-        result = reach_consensus(votes)
+        result = reach_consensus(
+            votes,
+            threshold=self.consensus_threshold,
+            veto_confidence=self.veto_confidence,
+        )
 
         memory.node_votes = result.votes
         memory.confidence_score = result.confidence_score
@@ -142,11 +156,11 @@ class Coordinator:
 
     # -- read path ------------------------------------------------------
 
-    def read_memory(self, query: str, top_k: int = 5) -> list[Memory]:
+    def read_memory(self, query: str, top_k: int | None = None) -> list[Memory]:
         """Return the top-k semantically similar accepted memories."""
         if self.store is None:
             return []
-        return self.store.query(query, top_k=top_k)
+        return self.store.query(query, top_k=top_k if top_k is not None else self.query_top_k)
 
     # -- quarantine / alerting ------------------------------------------
 
@@ -162,7 +176,7 @@ class Coordinator:
             "timestamp": memory.timestamp,
             "reason": reason,
             "rejection_count_for_source": count,
-            "escalation": count >= ESCALATION_THRESHOLD,
+            "escalation": count >= self.escalation_threshold,
         }
         with self.alert_log_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")

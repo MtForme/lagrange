@@ -111,11 +111,9 @@ LangChain-shaped memory backend).
 ```
 
 On first run the server creates an Ed25519 signing key at
-`LAGRANGE_KEY_PATH` (default `./lagrange_signing_key.pem`, `0600`) and
-reuses it afterwards, so `internal_system` signatures keep verifying
-across restarts. Point it at a persistent, backed-up path and treat the
-file as a secret. The vector store persists to `LAGRANGE_DB_PATH`
-(default `./chroma_db`).
+`LAGRANGE_KEY_PATH` and reuses it afterwards, so `internal_system`
+signatures keep verifying across restarts. Point it at a persistent,
+backed-up path and treat the file as a secret.
 
 This exposes two tools:
 
@@ -127,6 +125,29 @@ This exposes two tools:
 - `read_memory(query, top_k)` — each result is returned with its
   `source` and `confidence_score`, and `low_confidence: true` is flagged
   explicitly.
+
+## Configuration
+
+The MCP server reads `LAGRANGE_*` environment variables
+([`lagrange/config.py`](lagrange/config.py)); unset ones keep their
+default. As a library, use
+`build_coordinator(LagrangeConfig(query_top_k=10, ...))` for the same
+wiring, or pass the individual knobs to `Coordinator(...)` yourself.
+
+| variable | default | what it does |
+|---|---|---|
+| `LAGRANGE_KEY_PATH` | `./lagrange_signing_key.pem` | Ed25519 signing key (secret; back it up) |
+| `LAGRANGE_DB_PATH` | `./chroma_db` | ChromaDB vector store location |
+| `LAGRANGE_ALERT_LOG_PATH` | `./lagrange_alerts.jsonl` | quarantine / escalation log |
+| `LAGRANGE_EMBEDDER` | `hashing` | `hashing` (offline) or `sentence-transformers` |
+| `LAGRANGE_ST_MODEL` | `all-MiniLM-L6-v2` | model name when embedder is `sentence-transformers` |
+| `LAGRANGE_QUERY_TOP_K` | `5` | how many similar memories the semantic node sees |
+| `LAGRANGE_CONSENSUS_THRESHOLD` | `0.667` | fraction of nodes that must accept |
+| `LAGRANGE_VETO_CONFIDENCE` | `0.85` | a lone rejection at/above this blocks the write |
+| `LAGRANGE_ESCALATION_THRESHOLD` | `3` | rejections from one source before an alert escalates |
+| `LAGRANGE_SEMANTIC_TOPIC_THRESHOLD` | `0.6` | similarity above which a contradiction is a reject |
+| `LAGRANGE_TEMPORAL_BURST_WINDOW_SECONDS` | `5.0` | window for burst detection |
+| `LAGRANGE_TEMPORAL_BURST_THRESHOLD` | `5` | writes per window before a burst is flagged |
 
 ## How the three nodes vote
 
