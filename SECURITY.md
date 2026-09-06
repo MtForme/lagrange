@@ -39,8 +39,6 @@ few days. There is no bug-bounty program.
   documented as `test_KNOWN_LIMITATION_...` in `tests/test_attacks.py`.
 - The contradiction and instruction detectors are keyword lists and can
   be evaded by paraphrase.
-- The `Signer` generates a fresh keypair per process (no persistence
-  yet).
 - The coordinator is a single point of failure; compromising 2 of 3
   nodes defeats consensus.
 

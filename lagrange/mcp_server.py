@@ -18,6 +18,7 @@ deliberately enforced here on top of whatever the nodes decide:
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -33,6 +34,12 @@ from lagrange.nodes.temporal_node import TemporalNode
 ALLOWED_AGENT_SOURCES = ("verified_user", "external_unverified")
 LOW_CONFIDENCE_THRESHOLD = 0.6
 
+# Where the long-lived Ed25519 signing key and the vector store live.
+# Overridable so a deployment can point them at a persistent, backed-up
+# location rather than the process's working directory.
+DEFAULT_KEY_PATH = "./lagrange_signing_key.pem"
+DEFAULT_DB_PATH = "./chroma_db"
+
 mcp = FastMCP("lagrange")
 
 _coordinator: Coordinator | None = None
@@ -42,12 +49,19 @@ def _get_coordinator() -> Coordinator:
     """Build the real three-node system once, lazily — importing this
     module (e.g. to run tests against the tool functions) must never by
     itself touch disk or do any work.
+
+    The signing key is loaded from LAGRANGE_KEY_PATH (created on first
+    run) so that internal_system signatures keep verifying across server
+    restarts; the store persists to LAGRANGE_DB_PATH.
     """
     global _coordinator
     if _coordinator is None:
-        signer = Signer()
+        signer = Signer.load_or_create(os.environ.get("LAGRANGE_KEY_PATH", DEFAULT_KEY_PATH))
         semantic_node = SemanticNode()
-        store = MemoryStore(embedder=semantic_node.embedder)
+        store = MemoryStore(
+            embedder=semantic_node.embedder,
+            path=os.environ.get("LAGRANGE_DB_PATH", DEFAULT_DB_PATH),
+        )
         nodes = [semantic_node, CryptoNode(signer), TemporalNode()]
         _coordinator = Coordinator(nodes, store=store, signer=signer)
     return _coordinator

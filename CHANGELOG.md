@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `Signer.load(path)` / `.save(path)` / `.load_or_create(path)` — the
+  Ed25519 signing key now persists as `0600` PKCS#8 PEM, so
+  `internal_system` signatures keep verifying across process restarts.
+  The MCP server reads `LAGRANGE_KEY_PATH` (created on first run) and
+  `LAGRANGE_DB_PATH`.
 - `pyproject.toml` — the project is now an installable package
   (`lagrange-memory`), with `chroma` / `embeddings` / `mcp` / `all` /
   `dev` extras and a `lagrange-mcp` console entry point.
@@ -39,8 +44,7 @@ Initial implementation.
   `internal_system`, trust-tier grading for unsigned sources.
 - Node C (`TemporalNode`) — indirect-delivery-vector flagging and write
   burst detection.
-- `Signer` — Ed25519 key management (per-process keypair; persistence not
-  yet implemented).
+- `Signer` — Ed25519 key management for internal_system provenance.
 - `MemoryStore` — ChromaDB-backed store carrying full provenance
   metadata, with an in-memory mode for tests.
 - `mcp_server.py` — MCP server exposing `write_memory` / `read_memory`,

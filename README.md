@@ -99,10 +99,23 @@ LangChain-shaped memory backend).
 // claude_desktop_config.json
 {
   "mcpServers": {
-    "lagrange": { "command": "lagrange-mcp" }
+    "lagrange": {
+      "command": "lagrange-mcp",
+      "env": {
+        "LAGRANGE_KEY_PATH": "/var/lib/lagrange/signing_key.pem",
+        "LAGRANGE_DB_PATH": "/var/lib/lagrange/chroma_db"
+      }
+    }
   }
 }
 ```
+
+On first run the server creates an Ed25519 signing key at
+`LAGRANGE_KEY_PATH` (default `./lagrange_signing_key.pem`, `0600`) and
+reuses it afterwards, so `internal_system` signatures keep verifying
+across restarts. Point it at a persistent, backed-up path and treat the
+file as a secret. The vector store persists to `LAGRANGE_DB_PATH`
+(default `./chroma_db`).
 
 This exposes two tools:
 
@@ -144,9 +157,6 @@ three nodes, the ChromaDB store, the MCP server, and the examples.
   `test_KNOWN_LIMITATION_*` test.
 - The contradiction / instruction detectors are **keyword lists** —
   bypassable by paraphrase. Defense-in-depth, not a solved classifier.
-- The `Signer` generates a **fresh keypair per process**, so
-  `internal_system` memories do not verify across restarts. Needs key
-  persistence before real deployment.
 - The **coordinator is a single point of failure**; **2/3 compromised
   nodes** defeat the system.
 - The `< 50 ms`/write latency target is **not yet benchmarked**.

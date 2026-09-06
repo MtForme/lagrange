@@ -139,6 +139,13 @@ The only legitimate way to produce a signed `internal_system` memory is
 agent-facing MCP surface — anything reachable by the agent is reachable
 by prompt injection.
 
+The instance key is an Ed25519 private key persisted as unencrypted
+PKCS#8 PEM (`0600`). `Signer.load_or_create(path)` creates it on first
+run and reuses it afterwards, so a signature written before a restart
+still verifies after one; the MCP server reads its path from
+`LAGRANGE_KEY_PATH`. A bare `Signer()` generates a throwaway key and is
+only for tests and one-shot scripts.
+
 ### Node C — Temporal pattern analysis (`temporal_node.py`)
 
 Looks at *when* and *from what context* a memory arrives, independent of
@@ -212,9 +219,6 @@ Every stored memory carries:
 - **Node collusion.** 2/3 compromised nodes defeat the system. Future
   work: TEE attestation.
 - **Cold start.** Node A needs existing memories to detect anomalies.
-- **Signing key persistence.** The `Signer` currently generates a fresh
-  keypair per process; internal_system memories do not verify across
-  restarts. Needed before real deployment.
 - **Latency.** Three-node consensus adds overhead; the < 50 ms/write
   target is not yet benchmarked.
 
