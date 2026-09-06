@@ -93,6 +93,9 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+# Only our Python. Don't reformat fenced code blocks in Markdown docs,
+# where alignment is deliberate.
+include = ["lagrange/**/*.py", "tests/**/*.py", "examples/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

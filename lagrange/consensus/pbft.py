@@ -75,14 +75,11 @@ def reach_consensus(
     # its confidence, since a confident dissent is itself evidence
     # against the outcome. This is what lets "accepted but flagged"
     # memories surface at read time (see CLAUDE.md's read flow).
-    agreement_scores = [
-        v.confidence if v.verdict == accepted else (1 - v.confidence) for v in votes
-    ]
+    agreement_scores = [v.confidence if v.verdict == accepted else (1 - v.confidence) for v in votes]
     confidence_score = sum(agreement_scores) / len(votes)
 
     reason = "; ".join(
-        f"{v.node_id}={'accept' if v.verdict else 'reject'}({v.confidence:.2f}: {v.reason})"
-        for v in votes
+        f"{v.node_id}={'accept' if v.verdict else 'reject'}({v.confidence:.2f}: {v.reason})" for v in votes
     )
     if vetoed_by is not None:
         reason = f"VETOED by {vetoed_by.node_id} ({vetoed_by.confidence:.2f}): {reason}"

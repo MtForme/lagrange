@@ -73,7 +73,9 @@ def test_moderate_confidence_dissent_lowers_confidence_without_vetoing():
     votes = [vote("semantic", True, 0.9), vote("crypto", True, 0.9), vote("temporal", False, 0.6)]
     result = reach_consensus(votes)
     assert result.accepted is True
-    unanimous_result = reach_consensus([vote("semantic", True, 0.9), vote("crypto", True, 0.9), vote("temporal", True, 0.9)])
+    unanimous_result = reach_consensus(
+        [vote("semantic", True, 0.9), vote("crypto", True, 0.9), vote("temporal", True, 0.9)]
+    )
     assert result.confidence_score < unanimous_result.confidence_score
 
 

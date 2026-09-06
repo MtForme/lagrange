@@ -72,9 +72,7 @@ def test_query_returns_most_similar_memory_first():
 
 
 def test_top_k_limits_number_of_results():
-    embedder = FixedEmbedder(
-        {f"fact {i}": [float(i), 0.0, 0.0] for i in range(5)} | {"query": [2.0, 0.0, 0.0]}
-    )
+    embedder = FixedEmbedder({f"fact {i}": [float(i), 0.0, 0.0] for i in range(5)} | {"query": [2.0, 0.0, 0.0]})
     store = MemoryStore(embedder=embedder, path=None)
     for i in range(5):
         store.add(_memory(f"fact {i}", memory_id=f"m{i}"))

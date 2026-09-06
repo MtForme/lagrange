@@ -11,7 +11,8 @@ similarity search agree on one vector space.
 from __future__ import annotations
 
 import uuid
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import chromadb
 
@@ -84,7 +85,7 @@ class MemoryStore:
         metadatas = results.get("metadatas", [[]])[0]
 
         memories = []
-        for memory_id, content, meta in zip(ids, documents, metadatas):
+        for memory_id, content, meta in zip(ids, documents, metadatas, strict=True):
             memories.append(
                 Memory(
                     id=memory_id,

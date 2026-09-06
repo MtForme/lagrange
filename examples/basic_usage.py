@@ -27,8 +27,9 @@ from pathlib import Path
 # `import lagrange` resolves to the package next to this examples/ dir.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# Node reasons use em dashes; default Windows console codepages can't render them.
 if sys.stdout.encoding != "utf-8":
-    sys.stdout.reconfigure(encoding="utf-8")  # node reasons use em dashes; default Windows console codepages can't render them
+    sys.stdout.reconfigure(encoding="utf-8")
 
 from lagrange.coordinator import Coordinator
 from lagrange.crypto.signer import Signer

@@ -1,5 +1,9 @@
 # Lagrange
 
+[![CI](https://github.com/MtForme/lagrange/actions/workflows/ci.yml/badge.svg)](https://github.com/MtForme/lagrange/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 **Byzantine Fault Tolerant consensus for AI agent memory.**
 
 An AI agent with persistent memory acts on whatever is in that memory. If

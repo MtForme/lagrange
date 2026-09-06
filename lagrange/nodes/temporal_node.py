@@ -91,8 +91,7 @@ class TemporalNode(BaseNode):
         self._recent_writes[source] = recent
         if len(recent) > self.burst_threshold:
             return True, (
-                f"{len(recent)} writes from {source!r} within {self.burst_window_seconds}s "
-                "— unusual burst pattern"
+                f"{len(recent)} writes from {source!r} within {self.burst_window_seconds}s — unusual burst pattern"
             )
         return False, ""
 

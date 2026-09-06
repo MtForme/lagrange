@@ -29,7 +29,7 @@ def _message(content: str, source: str, timestamp: float) -> bytes:
     lifting a legitimately-signed internal_system signature and
     reattaching it to different, attacker-chosen content).
     """
-    return f"{content}\x00{source}\x00{timestamp!r}".encode("utf-8")
+    return f"{content}\x00{source}\x00{timestamp!r}".encode()
 
 
 class Signer:

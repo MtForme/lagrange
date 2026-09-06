@@ -23,7 +23,8 @@ inconsistent with, so new memories are accepted by default.
 from __future__ import annotations
 
 import hashlib
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -103,7 +104,7 @@ class SemanticNode(BaseNode):
         self.topic_threshold = topic_threshold
 
     @classmethod
-    def from_sentence_transformers(cls, model_name: str = "all-MiniLM-L6-v2", **kwargs) -> "SemanticNode":
+    def from_sentence_transformers(cls, model_name: str = "all-MiniLM-L6-v2", **kwargs) -> SemanticNode:
         """Opt-in production embedder. Imports and downloads the model
         only when explicitly called — never as an implicit default, so
         constructing a SemanticNode() never triggers network access.
@@ -134,7 +135,8 @@ class SemanticNode(BaseNode):
                 self.node_id,
                 False,
                 confidence,
-                f"semantically close (similarity={best_similarity:.2f}) to an existing memory but reads as a contradiction",
+                f"semantically close (similarity={best_similarity:.2f}) to an existing memory "
+                "but reads as a contradiction",
             )
 
         confidence = round(min(0.95, 0.6 + 0.3 * best_similarity), 4)

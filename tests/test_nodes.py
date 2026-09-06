@@ -190,10 +190,7 @@ def test_burst_of_writes_from_same_source_is_flagged():
     node = TemporalNode(burst_window_seconds=5.0, burst_threshold=3)
     source = "verified_user"
 
-    votes = [
-        node.evaluate(_memory(source, timestamp=100.0 + i), context={"origin": "direct_chat"})
-        for i in range(5)
-    ]
+    votes = [node.evaluate(_memory(source, timestamp=100.0 + i), context={"origin": "direct_chat"}) for i in range(5)]
 
     assert votes[0].verdict is True
     assert votes[-1].verdict is False
@@ -205,8 +202,7 @@ def test_writes_spaced_outside_the_window_are_not_treated_as_a_burst():
     source = "verified_user"
 
     votes = [
-        node.evaluate(_memory(source, timestamp=100.0 + i * 10), context={"origin": "direct_chat"})
-        for i in range(5)
+        node.evaluate(_memory(source, timestamp=100.0 + i * 10), context={"origin": "direct_chat"}) for i in range(5)
     ]
 
     assert all(v.verdict is True for v in votes)
@@ -255,7 +251,10 @@ def test_novel_topic_unrelated_to_existing_memories_is_accepted():
     node = SemanticNode(embedder=embedder)
     existing = [_memory("internal_system", content="the deployment server is prod-1.internal")]
 
-    vote = node.evaluate(_memory("verified_user", content="my favorite food is pizza"), context={"similar_memories": existing})
+    vote = node.evaluate(
+        _memory("verified_user", content="my favorite food is pizza"),
+        context={"similar_memories": existing},
+    )
 
     assert vote.verdict is True
 
