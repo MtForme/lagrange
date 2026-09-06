@@ -9,6 +9,8 @@ gets silently downloaded on first add().
 
 from __future__ import annotations
 
+import numpy as np
+
 from lagrange.memory.schema import Memory
 from lagrange.memory.store import MemoryStore
 
@@ -69,6 +71,26 @@ def test_query_returns_most_similar_memory_first():
 
     assert len(results) == 1
     assert results[0].id == "m2"
+
+
+def test_add_and_query_accept_a_numpy_float32_embedding():
+    """sentence-transformers returns np.float32 arrays; np.float32 is not
+    a `float` subclass, so recent ChromaDB rejects a bare list(embedding).
+    The store must normalize embeddings regardless of dtype.
+    """
+    embedder = FixedEmbedder(
+        {
+            "signed fact": np.asarray([1.0, 0.0, 0.0], dtype=np.float32),
+            "lookup": np.asarray([0.9, 0.1, 0.0], dtype=np.float32),
+        }
+    )
+    store = MemoryStore(embedder=embedder, path=None)
+    store.add(_memory("signed fact", memory_id="f1"))
+
+    results = store.query("lookup", top_k=1)
+
+    assert len(results) == 1
+    assert results[0].id == "f1"
 
 
 def test_top_k_limits_number_of_results():

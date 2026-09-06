@@ -23,6 +23,18 @@ Embedder = Callable[[str], Sequence[float]]
 DEFAULT_COLLECTION_NAME = "lagrange_memories"
 
 
+def _as_floats(embedding: Sequence[float]) -> list[float]:
+    """Coerce an embedding to a plain list of Python floats.
+
+    sentence-transformers hands back a numpy array of np.float32, and
+    np.float32 is not a subclass of `float`, so recent ChromaDB rejects
+    `list(embedding)` as "not a list of floats". np.float64 happens to
+    slip through; float32 does not. Normalize here rather than depending
+    on which embedder and which ChromaDB version happen to line up.
+    """
+    return [float(x) for x in embedding]
+
+
 class MemoryStore:
     def __init__(
         self,
@@ -54,7 +66,7 @@ class MemoryStore:
         self._collection.add(
             ids=[memory.id],
             documents=[memory.content],
-            embeddings=[list(embedding)],
+            embeddings=[_as_floats(embedding)],
             metadatas=[self._to_metadata(memory)],
         )
 
@@ -62,7 +74,7 @@ class MemoryStore:
         if self.count() == 0:
             return []
         query_embedding = self.embedder(query_text)
-        results = self._collection.query(query_embeddings=[list(query_embedding)], n_results=top_k)
+        results = self._collection.query(query_embeddings=[_as_floats(query_embedding)], n_results=top_k)
         return self._results_to_memories(results)
 
     def count(self) -> int:
