@@ -49,7 +49,7 @@ embeddings = ["sentence-transformers>=3.0"]
 # The agent-facing MCP server (lagrange.mcp_server). mcp 2.x renamed
 # FastMCP -> MCPServer with a different API; pin to the v1 line this
 # server targets.
-mcp = ["mcp>=1.0,<2"]
+mcp = ["mcp>=1.0,<3"]
 # Everything a real deployment is likely to want in one shot.
 all = ["lagrange-memory[chroma,embeddings,mcp]"]
 # Contributor environment: all runtime extras + the test stack.
